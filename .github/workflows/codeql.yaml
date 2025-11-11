@@ -1,39 +1,47 @@
-name: Security — CodeQL
+name: Security — CodeQL (C#)
 
 on:
   push:
     branches: [ main ]
   pull_request:
-
+  workflow_dispatch:
 
 permissions:
   contents: read
-  security-events: write   # needed to upload results to Code scanning
+  security-events: write
 
 jobs:
   analyze:
-    name: Analyze (${{ matrix.language }})
+    name: Analyze (C#)
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 90
     strategy:
       fail-fast: false
       matrix:
-        # language: [ 'javascript', 'python', 'ccpp', 'csharp', 'go', 'java-kotlin', 'ruby', 'swift']
         language: ['csharp']
-        
+
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Set up .NET SDK
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Build solution
+        run: |
+          # If your solution or project file isn't in the root, edit the path here.
+          dotnet build --configuration Release --no-restore
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v3
         with:
           languages: ${{ matrix.language }}
-          # queries: security-extended,security-and-quality # optional suites
-
-      # For compiled languages, try Autobuild first (ignored for script languages)
-      - name: Autobuild
-        uses: github/codeql-action/autobuild@v3
+          queries: security-extended
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3
